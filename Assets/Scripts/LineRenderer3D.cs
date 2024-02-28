@@ -23,16 +23,32 @@ public struct Line3D : IJobParallelFor {
     [ReadOnly] public NativeArray<Vector3> directions;
     [ReadOnly] public NativeArray<float> sines;
     [ReadOnly] public NativeArray<float> cosines;
-    public NativeArray<Vector3> vertices;
-    public NativeArray<int> indices;
-    public void Execute(int i){
-        int circleIndex = i / resolution;
-        int localVertexIndex = i % resolution;
-        Vector3 right = Vector3.Cross(directions[circleIndex], Vector3.right).normalized * 1;
-        Vector3 up = Vector3.Cross(directions[circleIndex], right).normalized * 1;
-        vertices[i] = positions[localVertexIndex];
-        vertices[i] += cosines[localVertexIndex] * right;
-        vertices[i] += sines[localVertexIndex] * up;
+    //[NativeDisableParallelForRestriction] is unsafe and can cause race conditions,
+    //but in this case each job works on n=resolution vertices so it's not an issue
+    //look at it like at a 2d array of size Points x resolution
+    [NativeDisableParallelForRestriction] public NativeArray<Vector3> vertices;
+    [NativeDisableParallelForRestriction] public NativeArray<int> indices;
+    public void Execute(int i) {
+        Vector3 right = Vector3.Cross(directions[i], Vector3.right).normalized * 1;
+        Vector3 up = Vector3.Cross(directions[i], right).normalized * 1;
+        for (int j = 0; j < resolution; j++){
+            vertices[i * resolution + j] = positions[i];
+            vertices[i * resolution + j] += cosines[j] * right;
+            vertices[i * resolution + j] += sines[j] * up;
+            if (i == positions.Count() - 1) continue;
+            int[] ind = new int[4];
+            ind[0] = j + i * resolution;
+            ind[1] = (j + 1) % resolution + i * resolution;
+            ind[2] = j + resolution + i * resolution;
+            ind[3] = (j + 1) % resolution + resolution + i * resolution;
+            indices[i * resolution * 6 + j * 6] =     ind[0];
+            indices[i * resolution * 6 + j * 6 + 1] = ind[1];
+            indices[i * resolution * 6 + j * 6 + 2] = ind[2];
+            indices[i * resolution * 6 + j * 6 + 3] = ind[1];
+            indices[i * resolution * 6 + j * 6 + 4] = ind[3];
+            indices[i * resolution * 6 + j * 6 + 5] = ind[2];
+
+        }
     }
 }
 public class LineRenderer3D : MonoBehaviour
@@ -51,6 +67,8 @@ public class LineRenderer3D : MonoBehaviour
     NativeArray<int> indices;
     NativeArray<float> sines;
     NativeArray<float> cosines;
+    public Vector3[] vert;
+    public int[] ind;
     JobHandle jobHandle;
     void Awake(){
         meshRenderer = gameObject.AddComponent<MeshRenderer>();
@@ -66,20 +84,21 @@ public class LineRenderer3D : MonoBehaviour
     void Update()
     {
         vertices = new NativeArray<Vector3>(points.Count() * resolution, Allocator.Persistent);
-        indices = new NativeArray<int>(points.Count() * resolution * 6, Allocator.Persistent);
+        indices = new NativeArray<int>(points.Count() * resolution * 6 - resolution * 6, Allocator.Persistent);
         positions = new NativeArray<Vector3>(points.Count(), Allocator.Persistent);
         directions = new NativeArray<Vector3>(points.Count(), Allocator.Persistent);
         sines = new NativeArray<float>(resolution, Allocator.Persistent);
         cosines = new NativeArray<float>(resolution, Allocator.Persistent);
+        Debug.Log(vertices.Count());
+        RecalculatePoints(); //jobify this and above?? 
         for(int i = 0; i < points.Count(); i++){
             positions[i] = points[i].position;
+            directions[i] = points[i].direction;
         }
         for(int i = 0; i < resolution; i++){
             sines[i] = Mathf.Sin(i * Mathf.PI * 2 / resolution);
             cosines[i] = Mathf.Cos(i * Mathf.PI * 2 / resolution);
         }
-        RecalculatePoints(); //jobify this and above?? 
-        positions[0] = Vector3.up;
         var job = new Line3D() {
             resolution = resolution,
             indices = indices,
@@ -89,15 +108,29 @@ public class LineRenderer3D : MonoBehaviour
             sines = sines,
             cosines = cosines,
         };
-        jobHandle = job.Schedule(vertices.Length, resolution);
+        jobHandle = job.Schedule(points.Count(), 1);
         JobHandle.ScheduleBatchedJobs();
     }
     void LateUpdate(){
         jobHandle.Complete();
+        mesh = new Mesh();
+        vert = vertices.ToArray();
+        ind =  indices.ToArray();
+        mesh.vertices = vert;
+        mesh.triangles = ind;
+        meshFilter.sharedMesh = mesh;
+        mesh.RecalculateNormals();
+       /* vertices.Dispose();
+        indices.Dispose();
+        positions.Dispose();
+        directions.Dispose();
+        sines.Dispose();
+        cosines.Dispose();*/
+
+
         List<Vector3> pts = vertices.ToList<Vector3>();
         foreach(Vector3 point in pts){
             Debug.DrawRay(point, Vector3.up * 0.5f, Color.blue);
-            Debug.Log(point);
         }
     }
     public void RecalculatePoints(){

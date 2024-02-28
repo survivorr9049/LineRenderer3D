@@ -20,6 +20,7 @@ public class Point{
 }
 [BurstCompile] public struct Line3D : IJobParallelFor {
     public int resolution;
+    public int iterations;
     [ReadOnly] public NativeArray<Vector3> positions;
     [ReadOnly] public NativeArray<Vector3> directions;
     [ReadOnly] public NativeArray<float> sines;
@@ -36,19 +37,19 @@ public class Point{
             vertices[i * resolution + j] = positions[i];
             vertices[i * resolution + j] += cosines[j] * right;
             vertices[i * resolution + j] += sines[j] * up;
-            //if (i == positions.Count() - 1) continue;
-            int[] ind = new int[4];
+            if (i == iterations - 1) continue;
+            /*int[] ind = new int[4];
             ind[0] = j + i * resolution;
             ind[1] = (j + 1) % resolution + i * resolution;
             ind[2] = j + resolution + i * resolution;
-            ind[3] = (j + 1) % resolution + resolution + i * resolution;
+            ind[3] = (j + 1) % resolution + resolution + i * resolution;*/
             int offset = i * resolution * 6 + j * 6;
-            indices[i * resolution * 6 + j * 6] =     ind[0];
-            indices[i * resolution * 6 + j * 6 + 1] = ind[1];
-            indices[i * resolution * 6 + j * 6 + 2] = ind[2];
-            indices[i * resolution * 6 + j * 6 + 3] = ind[1];
-            indices[i * resolution * 6 + j * 6 + 4] = ind[3];
-            indices[i * resolution * 6 + j * 6 + 5] = ind[2];
+            indices[offset] = j + i * resolution;
+            indices[offset + 1] = (j + 1) % resolution + i * resolution;
+            indices[offset + 2] = j + resolution + i * resolution;
+            indices[offset + 3] = (j + 1) % resolution + i * resolution;
+            indices[offset + 4] = (j + 1) % resolution + resolution + i * resolution;
+            indices[offset + 5] = j + resolution + i * resolution;
         }
     }
 }
@@ -85,12 +86,11 @@ public class LineRenderer3D : MonoBehaviour
     void Update()
     {
         vertices = new NativeArray<Vector3>(points.Count() * resolution, Allocator.TempJob);
-        indices = new NativeArray<int>(points.Count() * resolution * 7 - resolution * 6, Allocator.TempJob);
+        indices = new NativeArray<int>(points.Count() * resolution * 6 - resolution * 6, Allocator.TempJob);
         positions = new NativeArray<Vector3>(points.Count(), Allocator.TempJob);
         directions = new NativeArray<Vector3>(points.Count(), Allocator.TempJob);
         sines = new NativeArray<float>(resolution, Allocator.TempJob);
         cosines = new NativeArray<float>(resolution, Allocator.TempJob);
-        Debug.Log(vertices.Count());
         RecalculatePoints(); //jobify this and above?? 
         for(int i = 0; i < points.Count(); i++){
             positions[i] = points[i].position;
@@ -108,20 +108,21 @@ public class LineRenderer3D : MonoBehaviour
             directions = directions,
             sines = sines,
             cosines = cosines,
+            iterations = points.Count()
         };
         jobHandle = job.Schedule(points.Count(), 16);
         JobHandle.ScheduleBatchedJobs();
     }
     void LateUpdate(){
         jobHandle.Complete();
-        //mesh = new Mesh();
+        mesh = new Mesh();
         vert = vertices.ToArray();
         ind =  indices.ToArray();
-        /*mesh.vertices = vert;
+        mesh.vertices = vert;
         mesh.triangles = ind;
-        meshFilter.sharedMesh = mesh;*/
+        meshFilter.sharedMesh = mesh;
 
-        //mesh.RecalculateNormals();
+        mesh.RecalculateNormals();
         vertices.Dispose();
         indices.Dispose();
         positions.Dispose();

@@ -6,6 +6,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.VisualScripting;
 using UnityEngine;
+using Unity.Burst;
 [System.Serializable]
 public class Point{
     public Vector3 position;
@@ -17,7 +18,7 @@ public class Point{
         this.thickness = thickness;
     }
 }
-public struct Line3D : IJobParallelFor {
+[BurstCompile] public struct Line3D : IJobParallelFor {
     public int resolution;
     [ReadOnly] public NativeArray<Vector3> positions;
     [ReadOnly] public NativeArray<Vector3> directions;
@@ -35,19 +36,19 @@ public struct Line3D : IJobParallelFor {
             vertices[i * resolution + j] = positions[i];
             vertices[i * resolution + j] += cosines[j] * right;
             vertices[i * resolution + j] += sines[j] * up;
-            if (i == positions.Count() - 1) continue;
+            //if (i == positions.Count() - 1) continue;
             int[] ind = new int[4];
             ind[0] = j + i * resolution;
             ind[1] = (j + 1) % resolution + i * resolution;
             ind[2] = j + resolution + i * resolution;
             ind[3] = (j + 1) % resolution + resolution + i * resolution;
+            int offset = i * resolution * 6 + j * 6;
             indices[i * resolution * 6 + j * 6] =     ind[0];
             indices[i * resolution * 6 + j * 6 + 1] = ind[1];
             indices[i * resolution * 6 + j * 6 + 2] = ind[2];
             indices[i * resolution * 6 + j * 6 + 3] = ind[1];
             indices[i * resolution * 6 + j * 6 + 4] = ind[3];
             indices[i * resolution * 6 + j * 6 + 5] = ind[2];
-
         }
     }
 }
@@ -83,12 +84,12 @@ public class LineRenderer3D : MonoBehaviour
 
     void Update()
     {
-        vertices = new NativeArray<Vector3>(points.Count() * resolution, Allocator.Persistent);
-        indices = new NativeArray<int>(points.Count() * resolution * 6 - resolution * 6, Allocator.Persistent);
-        positions = new NativeArray<Vector3>(points.Count(), Allocator.Persistent);
-        directions = new NativeArray<Vector3>(points.Count(), Allocator.Persistent);
-        sines = new NativeArray<float>(resolution, Allocator.Persistent);
-        cosines = new NativeArray<float>(resolution, Allocator.Persistent);
+        vertices = new NativeArray<Vector3>(points.Count() * resolution, Allocator.TempJob);
+        indices = new NativeArray<int>(points.Count() * resolution * 7 - resolution * 6, Allocator.TempJob);
+        positions = new NativeArray<Vector3>(points.Count(), Allocator.TempJob);
+        directions = new NativeArray<Vector3>(points.Count(), Allocator.TempJob);
+        sines = new NativeArray<float>(resolution, Allocator.TempJob);
+        cosines = new NativeArray<float>(resolution, Allocator.TempJob);
         Debug.Log(vertices.Count());
         RecalculatePoints(); //jobify this and above?? 
         for(int i = 0; i < points.Count(); i++){
@@ -108,30 +109,28 @@ public class LineRenderer3D : MonoBehaviour
             sines = sines,
             cosines = cosines,
         };
-        jobHandle = job.Schedule(points.Count(), 1);
+        jobHandle = job.Schedule(points.Count(), 16);
         JobHandle.ScheduleBatchedJobs();
     }
     void LateUpdate(){
         jobHandle.Complete();
-        mesh = new Mesh();
+        //mesh = new Mesh();
         vert = vertices.ToArray();
         ind =  indices.ToArray();
-        mesh.vertices = vert;
+        /*mesh.vertices = vert;
         mesh.triangles = ind;
-        meshFilter.sharedMesh = mesh;
-        mesh.RecalculateNormals();
-       /* vertices.Dispose();
+        meshFilter.sharedMesh = mesh;*/
+
+        //mesh.RecalculateNormals();
+        vertices.Dispose();
         indices.Dispose();
         positions.Dispose();
         directions.Dispose();
         sines.Dispose();
-        cosines.Dispose();*/
+        cosines.Dispose();
 
 
-        List<Vector3> pts = vertices.ToList<Vector3>();
-        foreach(Vector3 point in pts){
-            Debug.DrawRay(point, Vector3.up * 0.5f, Color.blue);
-        }
+
     }
     public void RecalculatePoints(){
         for(int i = 1; i < points.Count() - 1; i++){

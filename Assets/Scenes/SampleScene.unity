@@ -515,7 +515,199 @@ MonoBehaviour:
   - position: {x: 0, y: 5, z: 0}
     direction: {x: 0, y: 0, z: 0}
     thickness: 0
-  resolution: 1024
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  - position: {x: 0, y: 5, z: 0}
+    direction: {x: 0, y: 0, z: 0}
+    thickness: 0
+  resolution: 16
   meshFilter: {fileID: 0}
   mesh: {fileID: 0}
   meshRenderer: {fileID: 0}

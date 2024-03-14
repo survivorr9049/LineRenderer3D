@@ -10,13 +10,9 @@ using Unity.Burst;
 [System.Serializable]
 public struct Point{
     public Vector3 position;
-    [HideInInspector] public Vector3 direction;
-    [HideInInspector] public Vector3 normal;
     public float thickness;
-    public Point(Vector3 position, Vector3 direction, Vector3 normal, float thickness){
+    public Point(Vector3 position, float thickness){
         this.position = position;
-        this.direction = direction;
-        this.normal = normal;
         this.thickness = thickness;
     }
 }
@@ -32,14 +28,30 @@ public struct Point{
     [NativeDisableParallelForRestriction] public NativeArray<Vector3> vertices;
     [NativeDisableParallelForRestriction] public NativeArray<int> indices;
     public void Execute(int i) {
-        Vector3 right = Vector3.Cross(nodes[i].direction, Vector3.right).normalized* nodes[i].thickness;
-        Vector3 up = Vector3.Cross(nodes[i].direction, right).normalized* nodes[i].thickness;
+        Vector3 direction = Vector3.zero;
+        Vector3 normal = Vector3.zero;
+        if(i == 0){
+            direction = (nodes[1].position - nodes[0].position).normalized;
+
+        }else if(i == iterations - 1){
+            direction = (nodes[iterations - 1].position - nodes[iterations - 2].position).normalized;
+        }else{
+            Vector3 previous = (nodes[i].position - nodes[i-1].position).normalized;
+            Vector3 next = (nodes[i+1].position - nodes[i].position).normalized;
+            direction = Vector3.Lerp(previous, next, 0.5f).normalized;
+            normal = (next - previous).normalized * Mathf.Abs(Vector3.Dot(previous, direction));
+        }
+        Vector3 right = Vector3.Cross(direction, normal).normalized* nodes[i].thickness;
+        Vector3 up = Vector3.Cross(direction, right).normalized* nodes[i].thickness;
+
+        
+
         Debug.DrawRay(nodes[i].position, right, Color.green);
         Debug.DrawRay(nodes[i].position, up, Color.blue);
         for (int j = 0; j < resolution; j++){
             vertices[i * resolution + j] = nodes[i].position;
             Vector3 vertexOffset = cosines[j] * right + sines[j] * up;
-            vertexOffset += vertexOffset * Mathf.Abs(Vector3.Dot(nodes[i].normal.normalized, vertexOffset.normalized)) * (Mathf.Clamp(1/nodes[i].normal.magnitude, 0.5f, 4) - 1);
+            vertexOffset += vertexOffset * Mathf.Abs(Vector3.Dot(normal.normalized, vertexOffset.normalized)) * (Mathf.Clamp(1/normal.magnitude, 0.5f, 4) - 1);
             vertices[i * resolution + j] += vertexOffset;
             if (i == iterations - 1) continue;
             int offset = i * resolution * 6 + j * 6;
@@ -79,17 +91,19 @@ public class LineRenderer3D : MonoBehaviour
     void Start()
     {
         meshRenderer.sharedMaterial = material;
+        points.Clear();
+        for(float i = 0; i < 128; i++){
+            points.Add(new Point(transform.position + Vector3.up * Mathf.Cos(i / 16) + Vector3.right * Mathf.Sin(i / 7) + Vector3.forward * Mathf.Cos(i / 11    ), 0.2f));
+        }
     }
 
     void Update()
     {
         vertices = new NativeArray<Vector3>(points.Count() * resolution, Allocator.TempJob);
         indices = new NativeArray<int>(points.Count() * resolution * 6 - resolution * 6, Allocator.TempJob);
-
         nodes = new NativeArray<Point>(points.Count(), Allocator.TempJob);
         sines = new NativeArray<float>(resolution, Allocator.TempJob);
         cosines = new NativeArray<float>(resolution, Allocator.TempJob);
-        RecalculatePoints(); //jobify this and below?? 
         for(int i = 0; i < points.Count(); i++){
             nodes[i] = points[i];
         }
@@ -129,14 +143,14 @@ public class LineRenderer3D : MonoBehaviour
 
     }
     public void RecalculatePoints(){
-        for(int i = 1; i < points.Count() - 1; i++){
-            Vector3 previous = (points[i].position - points[i-1].position).normalized;
-            Vector3 next = (points[i+1].position - points[i].position).normalized;
-            Vector3 direction = Vector3.Lerp(previous, next, 0.5f).normalized;
-            Vector3 normal = (next - previous).normalized * Mathf.Abs(Vector3.Dot(previous, direction)); //length encodes cosine of angle   
-            points[i] = new Point(points[i].position, direction, normal, points[i].thickness);
-        }
-        points[0] = new Point(points[0].position, (points[1].position - points[0].position).normalized, Vector3.zero, points[0].thickness); 
-        points[points.Count()-1] = new Point(points[points.Count()-1].position, (points[points.Count-1].position - points[points.Count()-2].position).normalized, Vector3.zero, points[points.Count()-1].thickness); 
+        /* for(int i = 1; i < points.Count() - 1; i++){
+             Vector3 previous = (points[i].position - points[i-1].position).normalized;
+             Vector3 next = (points[i+1].position - points[i].position).normalized;
+             Vector3 direction = Vector3.Lerp(previous, next, 0.5f).normalized;
+             Vector3 normal = (next - previous).normalized * Mathf.Abs(Vector3.Dot(previous, direction)); //length encodes cosine of angle   
+             points[i] = new Point(points[i].position, direction, normal, points[i].thickness);
+         }
+         points[0] = new Point(points[0].position, (points[1].position - points[0].position).normalized, Vector3.zero, points[0].thickness); 
+         points[points.Count()-1] = new Point(points[points.Count()-1].position, (points[points.Count-1].position - points[points.Count()-2].position).normalized, Vector3.zero, points[points.Count()-1].thickness); */
     }
 }

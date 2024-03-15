@@ -47,7 +47,6 @@ public struct Point{
     public void Execute(int i) {
         Vector3 right = nodes[i].right.normalized * nodes[i].thickness;
         Vector3 up = nodes[i].up.normalized * nodes[i].thickness;
-        
         for (int j = 0; j < resolution; j++){
             vertices[i * resolution + j] = nodes[i].position;
             Vector3 vertexOffset = cosines[j] * right + sines[j] * up;
@@ -80,6 +79,19 @@ public struct Point{
         nodes[i] = new Point(nodes[i].position, direction, normal, up, right, nodes[i].thickness);
     }
 }
+[BurstCompile] public struct FixPointsRotation : IJob{
+    public NativeArray<Point> nodes;
+    public void Execute(){
+            for(int i = 0; i < nodes.Length - 1; i++){
+            Vector3 fromTo = (nodes[i + 1].position - nodes[i].position).normalized;
+            Vector3 firstRight = nodes[i].right - Vector3.Dot(nodes[i].right, fromTo) * fromTo;
+            Vector3 secondRight = nodes[i+1].right - Vector3.Dot(nodes[i+1].right, fromTo) * fromTo;
+            float angleRight = -Vector3.SignedAngle(firstRight, secondRight, fromTo);
+            Quaternion rot = Quaternion.AngleAxis(angleRight, nodes[i + 1].direction);
+            nodes[i+1] = new Point(nodes[i+1].position, nodes[i+1].direction, nodes[i+1].normal, rot * nodes[i+1].up, rot * nodes[i+1].right, nodes[i+1].thickness);
+        }   
+    }
+}
 public class LineRenderer3D : MonoBehaviour
 {
     public bool fixTwisting;
@@ -101,6 +113,7 @@ public class LineRenderer3D : MonoBehaviour
     public int[] ind;
     JobHandle jobHandle;
     JobHandle pointsJobHandle;
+    JobHandle rotationJobHandle;
     public float rotation;
     void Awake(){
         meshRenderer = gameObject.AddComponent<MeshRenderer>();
@@ -111,7 +124,7 @@ public class LineRenderer3D : MonoBehaviour
     void Start()
     {
         mesh = new Mesh();
-        Application.targetFrameRate = 165;
+        Application.targetFrameRate = -1;
         meshRenderer.sharedMaterial = material;
         points.Clear();
         Vector3 direction = Vector3.forward;
@@ -160,9 +173,13 @@ public class LineRenderer3D : MonoBehaviour
             cosines[i] = Mathf.Cos(i * Mathf.PI * 2 / resolution);
         }
         pointsJobHandle.Complete();
-
         RecalculatePoints(); 
-
+        var rotationJob = new FixPointsRotation()
+        {
+            nodes = nodes
+        };
+        rotationJobHandle = rotationJob.Schedule();
+        rotationJobHandle.Complete();
         var meshJob = new Line3D() {
             resolution = resolution,
             indices = indices,
@@ -214,7 +231,7 @@ public class LineRenderer3D : MonoBehaviour
         edgeUp = Vector3.Cross(edgeDirection, edgeRight).normalized;
         nodes[nodes.Count()-1] = new Point(nodes[nodes.Length-1].position, edgeDirection, Vector3.zero, edgeUp, edgeRight, nodes[nodes.Length-1].thickness); 
     
-        for(int i = 0; i < nodes.Length; i++){
+        /*for(int i = 0; i < nodes.Length; i++){
             if (i == nodes.Length - 1) continue;
             Vector3 fromTo = (nodes[i + 1].position - nodes[i].position).normalized;
             Vector3 firstRight = nodes[i].right - Vector3.Dot(nodes[i].right, fromTo) * fromTo;
@@ -222,7 +239,7 @@ public class LineRenderer3D : MonoBehaviour
             float angleRight = -Vector3.SignedAngle(firstRight, secondRight, fromTo);
             Quaternion rot = Quaternion.AngleAxis(angleRight + rotation, nodes[i + 1].direction);
             if(fixTwisting) nodes[i+1] = new Point(nodes[i+1].position, nodes[i+1].direction, nodes[i+1].normal, rot * nodes[i+1].up, rot * nodes[i+1].right, nodes[i+1].thickness);
-        }   
+        }   */
 
 
 

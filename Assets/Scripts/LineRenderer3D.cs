@@ -12,12 +12,16 @@ public struct Point{
     public Vector3 position;
     [HideInInspector] public Vector3 direction;
     [HideInInspector] public Vector3 normal;
+    [HideInInspector] public Vector3 up;
+    [HideInInspector] public Vector3 right;
     public float thickness;
-    public Point(Vector3 position, Vector3 direction, Vector3 normal, float thickness){
+    public Point(Vector3 position, Vector3 direction, Vector3 normal, Vector3 up, Vector3 right, float thickness){
         this.position = position;
         this.direction = direction;
         this.normal = normal;
         this.thickness = thickness;
+        this.up = up;
+        this.right = right;
     }
 }
 [BurstCompile] public struct Line3D : IJobParallelFor {
@@ -32,14 +36,13 @@ public struct Point{
     [NativeDisableParallelForRestriction] public NativeArray<Vector3> vertices;
     [NativeDisableParallelForRestriction] public NativeArray<int> indices;
     public void Execute(int i) {
-        Vector3 right = Vector3.Cross(nodes[i].direction, Vector3.right).normalized* nodes[i].thickness;
-        Vector3 up = Vector3.Cross(nodes[i].direction, right).normalized* nodes[i].thickness;
-        Debug.DrawRay(nodes[i].position, right, Color.green);
-        Debug.DrawRay(nodes[i].position, up, Color.blue);
+        Vector3 right = nodes[i].right * nodes[i].thickness;
+        Vector3 up = nodes[i].up * nodes[i].thickness;
+        
         for (int j = 0; j < resolution; j++){
             vertices[i * resolution + j] = nodes[i].position;
             Vector3 vertexOffset = cosines[j] * right + sines[j] * up;
-            vertexOffset += vertexOffset * Mathf.Abs(Vector3.Dot(nodes[i].normal.normalized, vertexOffset.normalized)) * (Mathf.Clamp(1/nodes[i].normal.magnitude, 0.5f, 4) - 1);
+            vertexOffset += vertexOffset * Mathf.Abs(Vector3.Dot(nodes[i].normal.normalized, vertexOffset.normalized)) * (Mathf.Clamp(1/nodes[i].normal.magnitude, 0.5f, 2) - 1);
             vertices[i * resolution + j] += vertexOffset;
             if (i == iterations - 1) continue;
             int offset = i * resolution * 6 + j * 6;
@@ -54,6 +57,7 @@ public struct Point{
 }
 public class LineRenderer3D : MonoBehaviour
 {
+    public bool fixTwisting;
     [SerializeField] List<Point> points = new List<Point>();
     [SerializeField] int resolution;
     [SerializeField] MeshFilter meshFilter;
@@ -70,6 +74,7 @@ public class LineRenderer3D : MonoBehaviour
     public Vector3[] vert;
     public int[] ind;
     JobHandle jobHandle;
+    public float rotation;
     void Awake(){
         meshRenderer = gameObject.AddComponent<MeshRenderer>();
         meshRenderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.BlendProbes;
@@ -134,9 +139,38 @@ public class LineRenderer3D : MonoBehaviour
             Vector3 next = (points[i+1].position - points[i].position).normalized;
             Vector3 direction = Vector3.Lerp(previous, next, 0.5f).normalized;
             Vector3 normal = (next - previous).normalized * Mathf.Abs(Vector3.Dot(previous, direction)); //length encodes cosine of angle   
-            points[i] = new Point(points[i].position, direction, normal, points[i].thickness);
+            Vector3 right = Vector3.Cross(direction, Vector3.forward).normalized;
+            Vector3 up = Vector3.Cross(direction, right).normalized;
+            points[i] = new Point(points[i].position, direction, normal, up, right, points[i].thickness);
+            Debug.DrawRay(points[i].position, points[i].up, Color.red);
+            Debug.DrawRay(points[i].position, points[i].right, Color.blue);
         }
-        points[0] = new Point(points[0].position, (points[1].position - points[0].position).normalized, Vector3.zero, points[0].thickness); 
-        points[points.Count()-1] = new Point(points[points.Count()-1].position, (points[points.Count-1].position - points[points.Count()-2].position).normalized, Vector3.zero, points[points.Count()-1].thickness); 
+        Vector3 edgeDirection = (points[1].position - points[0].position).normalized;
+        Vector3 edgeRight = Vector3.Cross(edgeDirection, Vector3.right).normalized;
+        Vector3 edgeUp = Vector3.Cross(edgeDirection, edgeRight).normalized;
+        points[0] = new Point(points[0].position, edgeDirection, Vector3.zero, edgeUp, edgeRight, points[0].thickness);
+        edgeDirection = (points[points.Count - 1].position - points[points.Count() - 2].position).normalized;
+        edgeRight = Vector3.Cross(edgeDirection, Vector3.right).normalized;
+        edgeUp = Vector3.Cross(edgeDirection, edgeRight).normalized;
+        points[points.Count()-1] = new Point(points[points.Count()-1].position, edgeDirection, Vector3.zero, edgeUp, edgeRight, points[points.Count()-1].thickness); 
+    
+        for(int i = 0; i < points.Count(); i++){
+
+            if (i == points.Count() - 1) continue;
+            Vector3 fromTo = (points[i + 1].position - points[i].position).normalized;
+            Vector3 firstRight = points[i].right - Vector3.Dot(points[i].right, fromTo) * fromTo;
+            Vector3 secondRight = points[i+1].right - Vector3.Dot(points[i+1].right, fromTo) * fromTo;
+            Quaternion rotRight = Quaternion.AngleAxis(-Mathf.Acos(Vector3.Dot(firstRight, secondRight)) * Mathf.Rad2Deg + rotation, points[i + 1].direction);
+            Vector3 firstUp = points[i].up - Vector3.Dot(points[i].up, fromTo) * fromTo;
+            Vector3 secondUp = points[i+1].up - Vector3.Dot(points[i+1].up, fromTo) * fromTo;
+            Quaternion rotUp = Quaternion.AngleAxis(-Mathf.Acos(Vector3.Dot(firstUp, secondUp)) * Mathf.Rad2Deg + rotation, points[i + 1].direction);
+            if(fixTwisting) points[i+1] = new Point(points[i+1].position, points[i+1].direction, points[i+1].normal, rotUp * points[i+1].up, rotRight * points[i+1].right, points[i+1].thickness);
+            Debug.DrawRay(points[i+1].position, points[i].up, Color.cyan);
+            Debug.DrawRay(points[i+1].position, points[i].right, Color.magenta);
+            Debug.DrawRay(points[i + 1].position + transform.position, points[i + 1].normal, Color.black);
+        }   
+
+
+
     }
 }

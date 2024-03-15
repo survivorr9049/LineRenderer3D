@@ -30,21 +30,21 @@ public struct Point{
     public void Execute(int i) {
         Vector3 direction = Vector3.zero;
         Vector3 normal = Vector3.zero;
-        if(i == 0){
+        if (i == 0) {
             direction = (nodes[1].position - nodes[0].position).normalized;
 
-        }else if(i == iterations - 1){
+        } else if (i == iterations - 1) {
             direction = (nodes[iterations - 1].position - nodes[iterations - 2].position).normalized;
-        }else{
-            Vector3 previous = (nodes[i].position - nodes[i-1].position).normalized;
-            Vector3 next = (nodes[i+1].position - nodes[i].position).normalized;
+        } else {
+            Vector3 previous = (nodes[i].position - nodes[i - 1].position).normalized;
+            Vector3 next = (nodes[i + 1].position - nodes[i].position).normalized;
             direction = Vector3.Lerp(previous, next, 0.5f).normalized;
             normal = (next - previous).normalized * Mathf.Abs(Vector3.Dot(previous, direction));
         }
-        Vector3 right = Vector3.Cross(direction, normal).normalized* nodes[i].thickness;
-        Vector3 up = Vector3.Cross(direction, right).normalized* nodes[i].thickness;
-
-        
+        Debug.DrawRay(nodes[i].position, direction, Color.magenta);
+        Debug.DrawRay(nodes[i].position, normal, Color.yellow);
+        Vector3 right = Vector3.Cross(direction, normal).normalized * nodes[i].thickness;
+        Vector3 up = Vector3.Cross(direction, right).normalized * nodes[i].thickness;
 
         Debug.DrawRay(nodes[i].position, right, Color.green);
         Debug.DrawRay(nodes[i].position, up, Color.blue);
@@ -91,10 +91,10 @@ public class LineRenderer3D : MonoBehaviour
     void Start()
     {
         meshRenderer.sharedMaterial = material;
-        points.Clear();
+       /* points.Clear();
         for(float i = 0; i < 128; i++){
             points.Add(new Point(transform.position + Vector3.up * Mathf.Cos(i / 16) + Vector3.right * Mathf.Sin(i / 7) + Vector3.forward * Mathf.Cos(i / 11    ), 0.2f));
-        }
+        }*/
     }
 
     void Update()

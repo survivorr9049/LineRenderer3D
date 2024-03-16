@@ -123,11 +123,11 @@ public class LineRenderer3D : MonoBehaviour
         mesh = new Mesh();
         meshFilter.sharedMesh = mesh;
         meshRenderer.sharedMaterial = material;
-        points.Clear();
+        //points.Clear();
         Vector3 direction = Vector3.forward;
         Vector3 position = Vector3.zero;
         Vector3 lastDirection = Vector3.forward;
-        for(float i = 0; i < 2048; i++){
+        //for(float i = 0; i < 2048; i++){
             /*int random = Random.Range(0, 6);
             if(random == 0){
                 direction = Vector3.up;
@@ -146,8 +146,8 @@ public class LineRenderer3D : MonoBehaviour
             position += direction;
             points.Add(new Point(position, 0.2f));
             lastDirection = direction;*/
-            points.Add(new Point(new Vector3(Mathf.Cos(i/34 + 1.245f)*56, Mathf.Sin(i/56 + 0.456f)*74, Mathf.Sin(i/51)*62), 5f));
-        }
+            //points.Add(new Point(new Vector3(Mathf.Cos(i/34 + 1.245f)*56, Mathf.Sin(i/56 + 0.456f)*74, Mathf.Sin(i/51)*62), 5f));
+        //}
     }
     void Update()
     {
@@ -231,7 +231,11 @@ public class LineRenderer3D : MonoBehaviour
 
      ///<summary> initialize renderer with set amount of empty points </summary>
     public void SetPositions(int positionCount){
-        points = new List<Point>(positionCount);
+        points.Clear();
+        Point p = new Point(Vector3.zero, 0);
+        for(int i = 0; i < positionCount; i++){
+            points.Add(p);
+        }
     }
     ///<summary> remove point at index </summary>
     public void RemovePoint(int index){

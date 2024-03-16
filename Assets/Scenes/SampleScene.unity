@@ -348,7 +348,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fixTwisting: 0
-  uniformScale: 0
   points:
   - position: {x: 0, y: 0, z: 0}
     direction: {x: 0, y: 0, z: 0}
@@ -404,7 +403,7 @@ MonoBehaviour:
     up: {x: 0, y: 0, z: 0}
     right: {x: 0, y: 0, z: 0}
     thickness: 0.3
-  resolution: 16
+  resolution: 12
   meshFilter: {fileID: 0}
   mesh: {fileID: 0}
   meshRenderer: {fileID: 0}

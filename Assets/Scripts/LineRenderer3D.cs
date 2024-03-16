@@ -35,22 +35,24 @@ public struct Point{
 [BurstCompile] public struct Line3D : IJobParallelFor {
     public int resolution;
     public int iterations;
-    public bool uniformScale;
     [ReadOnly] public NativeArray<Point> nodes;
     [ReadOnly] public NativeArray<float> sines;
     [ReadOnly] public NativeArray<float> cosines;
     //[NativeDisableParallelForRestriction] is unsafe and can cause race conditions,
     //but in this case each job works on n=resolution vertices so it's not an issue
     //look at it like at a 2d array of size Points x resolution
+    //i used this approach because it makes adressing points way easier
     [NativeDisableParallelForRestriction] public NativeArray<Vector3> vertices;
     [NativeDisableParallelForRestriction] public NativeArray<int> indices;
+    [NativeDisableParallelForRestriction] public NativeArray<Vector3> normals;
     public void Execute(int i) {
         Vector3 right = nodes[i].right.normalized * nodes[i].thickness;
         Vector3 up = nodes[i].up.normalized * nodes[i].thickness;
         for (int j = 0; j < resolution; j++){
             vertices[i * resolution + j] = nodes[i].position;
             Vector3 vertexOffset = cosines[j] * right + sines[j] * up;
-            if(uniformScale) vertexOffset += nodes[i].normal.normalized * Vector3.Dot(nodes[i].normal.normalized, vertexOffset) * (Mathf.Clamp(1/nodes[i].normal.magnitude, 0, 2) - 1);
+            normals[i * resolution + j] += vertexOffset.normalized;
+            vertexOffset += nodes[i].normal.normalized * Vector3.Dot(nodes[i].normal.normalized, vertexOffset) * (Mathf.Clamp(1/nodes[i].normal.magnitude, 0, 2) - 1);
             vertices[i * resolution + j] += vertexOffset;
             if (i == iterations - 1) continue;
             int offset = i * resolution * 6 + j * 6;
@@ -95,7 +97,6 @@ public struct Point{
 public class LineRenderer3D : MonoBehaviour
 {
     public bool fixTwisting;
-    public bool uniformScale;
     [SerializeField] List<Point> points = new List<Point>();
     [SerializeField] int resolution;
     [SerializeField] MeshFilter meshFilter;
@@ -105,6 +106,7 @@ public class LineRenderer3D : MonoBehaviour
     //Vector3[] vertices;
     //-----------------------------------------------------------------------//
     NativeArray<Vector3> vertices;
+    NativeArray<Vector3> normals;
     NativeArray<Point> nodes;
     NativeArray<int> indices;
     NativeArray<float> sines;
@@ -124,6 +126,7 @@ public class LineRenderer3D : MonoBehaviour
     void Start()
     {
         mesh = new Mesh();
+        meshFilter.sharedMesh = mesh;
         Application.targetFrameRate = -1;
         meshRenderer.sharedMaterial = material;
         points.Clear();
@@ -131,11 +134,11 @@ public class LineRenderer3D : MonoBehaviour
         Vector3 position = Vector3.zero;
         Vector3 lastDirection = Vector3.forward;
         for(float i = 0; i < 2048; i++){
-            int random = Random.Range(0, 5);
+            int random = Random.Range(0, 6);
             if(random == 0){
-                direction = Vector3.right;
-            }else if (random == 1){
                 direction = Vector3.up;
+            }else if (random == 1){
+                direction = Vector3.right;
             }else if (random == 2){
                 direction = Vector3.forward;
             }else if (random == 3){
@@ -149,13 +152,12 @@ public class LineRenderer3D : MonoBehaviour
             position += direction;
             points.Add(new Point(position, 0.2f));
             lastDirection = direction;
-
         }
     }
-
     void Update()
     {
         vertices = new NativeArray<Vector3>(points.Count() * resolution, Allocator.TempJob);
+        normals = new NativeArray<Vector3>(points.Count() * resolution, Allocator.TempJob);
         indices = new NativeArray<int>(points.Count() * resolution * 6 - resolution * 6, Allocator.TempJob);
         nodes = new NativeArray<Point>(points.Count(), Allocator.TempJob);
         sines = new NativeArray<float>(resolution, Allocator.TempJob);
@@ -167,13 +169,13 @@ public class LineRenderer3D : MonoBehaviour
         {
             nodes = nodes
         };
-        pointsJobHandle = pointsJob.Schedule(points.Count() - 1, 512);
+        pointsJobHandle = pointsJob.Schedule(points.Count() - 1, 16);
         for(int i = 0; i < resolution; i++){
             sines[i] = Mathf.Sin(i * Mathf.PI * 2 / resolution);
             cosines[i] = Mathf.Cos(i * Mathf.PI * 2 / resolution);
         }
         pointsJobHandle.Complete();
-        RecalculatePoints(); 
+        CalculateEdgePoints(); 
         var rotationJob = new FixPointsRotation()
         {
             nodes = nodes
@@ -187,8 +189,8 @@ public class LineRenderer3D : MonoBehaviour
             sines = sines,
             nodes = nodes,
             cosines = cosines,
+            normals = normals,
             iterations = points.Count(),
-            uniformScale = uniformScale,
         };
         jobHandle = meshJob.Schedule(points.Count(), 16);
         JobHandle.ScheduleBatchedJobs();
@@ -197,31 +199,15 @@ public class LineRenderer3D : MonoBehaviour
         jobHandle.Complete();
         mesh.SetVertices(vertices.ToArray());
         mesh.SetTriangles(indices.ToArray(), 0);
-        meshFilter.sharedMesh = mesh;
+        mesh.SetNormals(normals.ToArray());
 
-        mesh.RecalculateNormals();
         vertices.Dispose();
         indices.Dispose();
         sines.Dispose();
         cosines.Dispose();
         nodes.Dispose();
-
-
-
     }
-    public void RecalculatePoints(){
-        /*for(int i = 1; i < points.Count() - 1; i++){
-            Vector3 previous = (points[i].position - points[i-1].position).normalized;
-            Vector3 next = (points[i+1].position - points[i].position).normalized;
-            Vector3 direction = Vector3.Lerp(previous, next, 0.5f).normalized;
-            Vector3 normal = (next - previous).normalized * Mathf.Abs(Vector3.Dot(previous, direction)); //length encodes cosine of angle   
-            Vector3 right = Vector3.Cross(direction, Vector3.right).normalized;
-            if(Mathf.Approximately(0, right.magnitude)){
-                right = Vector3.Cross(direction, Vector3.forward).normalized;
-            }
-            Vector3 up = Vector3.Cross(direction, right).normalized;
-            points[i] = new Point(points[i].position, direction, normal, up, right, points[i].thickness);
-        }*/
+    public void CalculateEdgePoints(){
         Vector3 edgeDirection = (nodes[1].position - nodes[0].position).normalized;
         Vector3 edgeRight = Vector3.Cross(edgeDirection, Vector3.right).normalized;
         Vector3 edgeUp = Vector3.Cross(edgeDirection, edgeRight).normalized;
@@ -230,18 +216,5 @@ public class LineRenderer3D : MonoBehaviour
         edgeRight = Vector3.Cross(edgeDirection, Vector3.right).normalized;
         edgeUp = Vector3.Cross(edgeDirection, edgeRight).normalized;
         nodes[nodes.Count()-1] = new Point(nodes[nodes.Length-1].position, edgeDirection, Vector3.zero, edgeUp, edgeRight, nodes[nodes.Length-1].thickness); 
-    
-        /*for(int i = 0; i < nodes.Length; i++){
-            if (i == nodes.Length - 1) continue;
-            Vector3 fromTo = (nodes[i + 1].position - nodes[i].position).normalized;
-            Vector3 firstRight = nodes[i].right - Vector3.Dot(nodes[i].right, fromTo) * fromTo;
-            Vector3 secondRight = nodes[i+1].right - Vector3.Dot(nodes[i+1].right, fromTo) * fromTo;
-            float angleRight = -Vector3.SignedAngle(firstRight, secondRight, fromTo);
-            Quaternion rot = Quaternion.AngleAxis(angleRight + rotation, nodes[i + 1].direction);
-            if(fixTwisting) nodes[i+1] = new Point(nodes[i+1].position, nodes[i+1].direction, nodes[i+1].normal, rot * nodes[i+1].up, rot * nodes[i+1].right, nodes[i+1].thickness);
-        }   */
-
-
-
     }
 }

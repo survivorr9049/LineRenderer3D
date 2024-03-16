@@ -347,7 +347,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a38198913b4bcb34d88e601da46a3878, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fixTwisting: 0
+  autoUpdate: 1
+  resolution: 12
+  material: {fileID: 2100000, guid: 32ff679fe2ecc1c498e1aa614e40aea4, type: 2}
   points:
   - position: {x: 0, y: 0, z: 0}
     direction: {x: 0, y: 0, z: 0}
@@ -373,44 +375,6 @@ MonoBehaviour:
     up: {x: 0, y: 0, z: 0}
     right: {x: 0, y: 0, z: 0}
     thickness: 0.3
-  - position: {x: 1, y: 3, z: 0}
-    direction: {x: 0, y: 0, z: 0}
-    normal: {x: 0, y: 0, z: 0}
-    up: {x: 0, y: 0, z: 0}
-    right: {x: 0, y: 0, z: 0}
-    thickness: 0.3
-  - position: {x: 2, y: 3, z: 0}
-    direction: {x: 0, y: 0, z: 0}
-    normal: {x: 0, y: 0, z: 0}
-    up: {x: 0, y: 0, z: 0}
-    right: {x: 0, y: 0, z: 0}
-    thickness: 0.3
-  - position: {x: 2, y: 3, z: 1}
-    direction: {x: 0, y: 0, z: 0}
-    normal: {x: 0, y: 0, z: 0}
-    up: {x: 0, y: 0, z: 0}
-    right: {x: 0, y: 0, z: 0}
-    thickness: 0.3
-  - position: {x: 1, y: 3, z: 1}
-    direction: {x: 0, y: 0, z: 0}
-    normal: {x: 0, y: 0, z: 0}
-    up: {x: 0, y: 0, z: 0}
-    right: {x: 0, y: 0, z: 0}
-    thickness: 0.3
-  - position: {x: 1, y: 2, z: 1}
-    direction: {x: 0, y: 0, z: 0}
-    normal: {x: 0, y: 0, z: 0}
-    up: {x: 0, y: 0, z: 0}
-    right: {x: 0, y: 0, z: 0}
-    thickness: 0.3
-  resolution: 12
-  meshFilter: {fileID: 0}
-  mesh: {fileID: 0}
-  meshRenderer: {fileID: 0}
-  material: {fileID: 2100000, guid: 32ff679fe2ecc1c498e1aa614e40aea4, type: 2}
-  vert: []
-  ind: 
-  rotation: 0
 --- !u!114 &963194230
 MonoBehaviour:
   m_ObjectHideFlags: 0

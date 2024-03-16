@@ -1,10 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Jobs;
-using Unity.VisualScripting;
 using UnityEngine;
 using Unity.Burst;
 [System.Serializable]
@@ -85,25 +83,25 @@ public struct Point{
     public NativeArray<Point> nodes;
     public void Execute(){
             for(int i = 0; i < nodes.Length - 1; i++){
-            Vector3 fromTo = (nodes[i + 1].position - nodes[i].position).normalized;
+            Vector3 fromTo = (nodes[i+1].position - nodes[i].position).normalized;
             Vector3 firstRight = nodes[i].right - Vector3.Dot(nodes[i].right, fromTo) * fromTo;
             Vector3 secondRight = nodes[i+1].right - Vector3.Dot(nodes[i+1].right, fromTo) * fromTo;
-            float angleRight = -Vector3.SignedAngle(firstRight, secondRight, fromTo);
-            Quaternion rot = Quaternion.AngleAxis(angleRight, nodes[i + 1].direction);
+            float angle = -Vector3.SignedAngle(firstRight, secondRight, fromTo);
+            Quaternion rot = Quaternion.AngleAxis(angle, nodes[i+1].direction);
             nodes[i+1] = new Point(nodes[i+1].position, nodes[i+1].direction, nodes[i+1].normal, rot * nodes[i+1].up, rot * nodes[i+1].right, nodes[i+1].thickness);
         }   
     }
 }
 public class LineRenderer3D : MonoBehaviour
 {
-    public bool fixTwisting;
-    [SerializeField] List<Point> points = new List<Point>();
-    [SerializeField] int resolution;
-    [SerializeField] MeshFilter meshFilter;
-    [SerializeField] Mesh mesh;
-    [SerializeField] MeshRenderer meshRenderer;
+    public bool autoUpdate;
+    public int resolution;
     public Material material;
-    //Vector3[] vertices;
+    MeshFilter meshFilter;
+    Mesh mesh;
+    MeshRenderer meshRenderer;
+    [SerializeField] List<Point> points = new List<Point>();
+    bool autoComplete;
     //-----------------------------------------------------------------------//
     NativeArray<Vector3> vertices;
     NativeArray<Vector3> normals;
@@ -111,12 +109,9 @@ public class LineRenderer3D : MonoBehaviour
     NativeArray<int> indices;
     NativeArray<float> sines;
     NativeArray<float> cosines;
-    public Vector3[] vert;
-    public int[] ind;
     JobHandle jobHandle;
     JobHandle pointsJobHandle;
     JobHandle rotationJobHandle;
-    public float rotation;
     void Awake(){
         meshRenderer = gameObject.AddComponent<MeshRenderer>();
         meshRenderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.BlendProbes;
@@ -127,14 +122,13 @@ public class LineRenderer3D : MonoBehaviour
     {
         mesh = new Mesh();
         meshFilter.sharedMesh = mesh;
-        Application.targetFrameRate = -1;
         meshRenderer.sharedMaterial = material;
         points.Clear();
         Vector3 direction = Vector3.forward;
         Vector3 position = Vector3.zero;
         Vector3 lastDirection = Vector3.forward;
         for(float i = 0; i < 2048; i++){
-            int random = Random.Range(0, 6);
+            /*int random = Random.Range(0, 6);
             if(random == 0){
                 direction = Vector3.up;
             }else if (random == 1){
@@ -151,11 +145,26 @@ public class LineRenderer3D : MonoBehaviour
             if (Vector3.Dot(lastDirection, direction) < 0) direction = -direction;
             position += direction;
             points.Add(new Point(position, 0.2f));
-            lastDirection = direction;
+            lastDirection = direction;*/
+            points.Add(new Point(new Vector3(Mathf.Cos(i/34 + 1.245f)*56, Mathf.Sin(i/56 + 0.456f)*74, Mathf.Sin(i/51)*62), 5f));
         }
     }
     void Update()
     {
+        if(autoUpdate) BeginGeneration();
+    }
+    void LateUpdate(){
+        if(autoUpdate) CompleteGeneration();
+        else if(autoComplete){
+            CompleteGeneration();
+            autoComplete = false;
+        }
+    }
+    public void BeginGenerationAutoComplete(){
+        BeginGeneration();
+        autoComplete = true;
+    }
+    public void BeginGeneration(){
         vertices = new NativeArray<Vector3>(points.Count() * resolution, Allocator.TempJob);
         normals = new NativeArray<Vector3>(points.Count() * resolution, Allocator.TempJob);
         indices = new NativeArray<int>(points.Count() * resolution * 6 - resolution * 6, Allocator.TempJob);
@@ -165,23 +174,25 @@ public class LineRenderer3D : MonoBehaviour
         for(int i = 0; i < points.Count(); i++){
             nodes[i] = points[i];
         }
+
         var pointsJob = new CalculatePointData()
         {
             nodes = nodes
         };
-        pointsJobHandle = pointsJob.Schedule(points.Count() - 1, 16);
+        pointsJobHandle = pointsJob.Schedule(points.Count() - 1, 32);
         for(int i = 0; i < resolution; i++){
             sines[i] = Mathf.Sin(i * Mathf.PI * 2 / resolution);
             cosines[i] = Mathf.Cos(i * Mathf.PI * 2 / resolution);
         }
         pointsJobHandle.Complete();
         CalculateEdgePoints(); 
+
         var rotationJob = new FixPointsRotation()
         {
             nodes = nodes
         };
         rotationJobHandle = rotationJob.Schedule();
-        rotationJobHandle.Complete();
+        rotationJobHandle.Complete(); //uses job only to utilize burst system for better performance
         var meshJob = new Line3D() {
             resolution = resolution,
             indices = indices,
@@ -195,11 +206,11 @@ public class LineRenderer3D : MonoBehaviour
         jobHandle = meshJob.Schedule(points.Count(), 16);
         JobHandle.ScheduleBatchedJobs();
     }
-    void LateUpdate(){
+    public void CompleteGeneration(){
         jobHandle.Complete();
-        mesh.SetVertices(vertices.ToArray());
-        mesh.SetTriangles(indices.ToArray(), 0);
-        mesh.SetNormals(normals.ToArray());
+        mesh.SetVertices(vertices);
+        mesh.SetIndices(indices, MeshTopology.Triangles, 0);
+        mesh.SetNormals(normals);
 
         vertices.Dispose();
         indices.Dispose();
@@ -207,14 +218,39 @@ public class LineRenderer3D : MonoBehaviour
         cosines.Dispose();
         nodes.Dispose();
     }
-    public void CalculateEdgePoints(){
+    void CalculateEdgePoints(){
         Vector3 edgeDirection = (nodes[1].position - nodes[0].position).normalized;
         Vector3 edgeRight = Vector3.Cross(edgeDirection, Vector3.right).normalized;
         Vector3 edgeUp = Vector3.Cross(edgeDirection, edgeRight).normalized;
         nodes[0] = new Point(nodes[0].position, edgeDirection, Vector3.zero, edgeUp, edgeRight, nodes[0].thickness);
-        edgeDirection = (nodes[nodes.Length - 1].position - nodes[nodes.Length - 2].position).normalized;
+        edgeDirection = (nodes[nodes.Length-1].position - nodes[nodes.Length-2].position).normalized;
         edgeRight = Vector3.Cross(edgeDirection, Vector3.right).normalized;
         edgeUp = Vector3.Cross(edgeDirection, edgeRight).normalized;
         nodes[nodes.Count()-1] = new Point(nodes[nodes.Length-1].position, edgeDirection, Vector3.zero, edgeUp, edgeRight, nodes[nodes.Length-1].thickness); 
+    }
+
+     ///<summary> initialize renderer with set amount of empty points </summary>
+    public void SetPositions(int positionCount){
+        points = new List<Point>(positionCount);
+    }
+    ///<summary> remove point at index </summary>
+    public void RemovePoint(int index){
+        points.RemoveAt(index);
+    }
+    ///<summary> add new point </summary>
+    public void AddPoint(Vector3 position, float thickness){
+        points.Add(new Point(position, thickness));
+    }
+    ///<summary> change point at index </summary>
+    public void SetPoint(int index, Vector3 position, float thickness){
+        points[index] = new Point(position, thickness);
+    }
+    ///<summary> set points to an array of vector3 with uniform thickness </summary>
+    public void SetPoints(Vector3[] positions, float thickness){
+        points = positions.Select(position => new Point(position, thickness)).ToList();
+    }
+    ///<summary> set points to an array of vector3 and float (thickness) </summary>
+    public void SetPoints(Vector3[] positions, float[] thicknesses){
+        points = positions.Zip(thicknesses, (position, thickness) => new Point(position, thickness)).ToList();
     }
 }

@@ -13,10 +13,10 @@ Due to the nature of this component by default `it will not generate any mesh by
 with this option all meshes will be automatically generated every frame,
 you should use this method if your line is dynamically modified
 #### Option 2 - Manually generate auto complete
-you can manually call function ```BeginGenerationAutoComplete()``` at any time you want, this allows you to make sure that mesh is updated after you set all of the point data,
+you can manually call ```BeginGenerationAutoComplete()``` at any time you want, this allows you to make sure that mesh is updated after you set all of the point data,
 this function will automatically complete mesh generation in ```LateUpdate()``` to allow for better parallelization, so make sure it's called before ```LateUpdate()```
 #### Option 3 - Manually generate
-you can manually call function ```BeginGeneration()``` to start mesh generation, this function prepares all the data and schedules mesh generation job, which then has to be completed
+you can manually call ```BeginGeneration()``` to start mesh generation, this prepares all the data and schedules mesh generation job, which then has to be completed
 using function ```CompleteGeneration()```, if you want to take full advantage of the job system you shouldn't call CompleteGeneration immediately and instead wait until later in the frame,
 to allow it to run in parallel to other tasks on the main thread
 ### Setting points
@@ -37,7 +37,7 @@ SetPositions(int positionCount) - change amount of points to positionCount, this
 ```
 SetPoints(Vector3[] positions, float thickness) - set points to an array of Vector3 positions, can also take an array of float as thickness
 ```
-For furher reference you can use attached example scripts which showcase different ways of controlling this component
+For further reference you can use attached example scripts which showcase different ways of controlling this component
 ## Installation
 Drag this script into Unity Editor and make sure you have Burst Compiler installed, Burst is crucial for perfomance
 ## Features

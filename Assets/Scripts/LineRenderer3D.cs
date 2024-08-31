@@ -217,6 +217,7 @@ public class LineRenderer3D : MonoBehaviour
         sines.Dispose();
         cosines.Dispose();
         nodes.Dispose();
+        normals.Dispose();
     }
     void CalculateEdgePoints(){
         Vector3 edgeDirection = (nodes[1].position - nodes[0].position).normalized;

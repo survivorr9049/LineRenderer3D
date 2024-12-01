@@ -123,31 +123,9 @@ public class LineRenderer3D : MonoBehaviour
         mesh = new Mesh();
         meshFilter.sharedMesh = mesh;
         meshRenderer.sharedMaterial = material;
-        //points.Clear();
         Vector3 direction = Vector3.forward;
         Vector3 position = Vector3.zero;
         Vector3 lastDirection = Vector3.forward;
-        //for(float i = 0; i < 2048; i++){
-            /*int random = Random.Range(0, 6);
-            if(random == 0){
-                direction = Vector3.up;
-            }else if (random == 1){
-                direction = Vector3.right;
-            }else if (random == 2){
-                direction = Vector3.forward;
-            }else if (random == 3){
-                direction = Vector3.left;
-            }else if (random == 4){
-                direction = Vector3.down;
-            }else if (random == 5){
-                direction = Vector3.back;
-            }
-            if (Vector3.Dot(lastDirection, direction) < 0) direction = -direction;
-            position += direction;
-            points.Add(new Point(position, 0.2f));
-            lastDirection = direction;*/
-            //points.Add(new Point(new Vector3(Mathf.Cos(i/34 + 1.245f)*56, Mathf.Sin(i/56 + 0.456f)*74, Mathf.Sin(i/51)*62), 5f));
-        //}
     }
     void Update()
     {

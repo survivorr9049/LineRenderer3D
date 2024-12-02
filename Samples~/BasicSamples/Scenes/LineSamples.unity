@@ -150,25 +150,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 187396612}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a38198913b4bcb34d88e601da46a3878, type: 3}
+  m_Script: {fileID: 11500000, guid: 42713d59f1517c846ae68b48b10a90a9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  autoUpdate: 1
-  resolution: 8
-  material: {fileID: 2100000, guid: b35f73b02a327664e8d00da6c5adf717, type: 2}
-  points:
-  - position: {x: 0, y: 0, z: 0}
-    direction: {x: 0, y: 0, z: 0}
-    normal: {x: 0, y: 0, z: 0}
-    up: {x: 0, y: 0, z: 0}
-    right: {x: 0, y: 0, z: 0}
-    thickness: 1
-  - position: {x: 1, y: 0, z: 0}
-    direction: {x: 0, y: 0, z: 0}
-    normal: {x: 0, y: 0, z: 0}
-    up: {x: 0, y: 0, z: 0}
-    right: {x: 0, y: 0, z: 0}
-    thickness: 1
+  autoUpdate: 0
+  resolution: 0
+  material: {fileID: 15303, guid: 0000000000000000f000000000000000, type: 0}
+  points: []
 --- !u!114 &187396614
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -478,25 +466,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1557405931}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a38198913b4bcb34d88e601da46a3878, type: 3}
+  m_Script: {fileID: 11500000, guid: 42713d59f1517c846ae68b48b10a90a9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   autoUpdate: 0
-  resolution: 8
-  material: {fileID: 2100000, guid: b35f73b02a327664e8d00da6c5adf717, type: 2}
-  points:
-  - position: {x: 0, y: 0, z: 0}
-    direction: {x: 0, y: 0, z: 0}
-    normal: {x: 0, y: 0, z: 0}
-    up: {x: 0, y: 0, z: 0}
-    right: {x: 0, y: 0, z: 0}
-    thickness: 1
-  - position: {x: 1, y: 0, z: 0}
-    direction: {x: 0, y: 0, z: 0}
-    normal: {x: 0, y: 0, z: 0}
-    up: {x: 0, y: 0, z: 0}
-    right: {x: 0, y: 0, z: 0}
-    thickness: 1
+  resolution: 0
+  material: {fileID: 15303, guid: 0000000000000000f000000000000000, type: 0}
+  points: []
 --- !u!114 &1557405933
 MonoBehaviour:
   m_ObjectHideFlags: 0

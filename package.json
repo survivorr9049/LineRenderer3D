@@ -1,0 +1,20 @@
+{
+    "name": "com.survivorr.linerenderer3d",
+    "version": "1.0.0",
+    "displayName": "LineRenderer3D",
+    "description": "component offering functionality similiar to LineRenderer but in 3D",
+    "unity": "2022.2",
+    "author": {
+      "name": "survivorr9049"
+    },
+    "dependencies": {
+        "com.unity.burst": "1.8.12"
+    },
+    "samples": [
+      {
+        "displayName": "Basic Samples",
+        "description": "Samples presenting basic use of LineRenderer3D",
+        "path": "Samples~/BasicSamples"
+      }
+    ]
+  }

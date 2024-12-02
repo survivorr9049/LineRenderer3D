@@ -39,7 +39,8 @@ SetPoints(Vector3[] positions, float thickness) - set points to an array of Vect
 ```
 For further reference you can use attached example scripts which showcase different ways of controlling this component
 ## Installation
-Drag this script into Unity Editor and make sure you have Burst Compiler installed, Burst is crucial for perfomance
+in Unity Editor go to Package Manager -> Add from git URL and use this link: 
+https://github.com/survivorr9049/LineRenderer3D.git
 ## Features
 Similiar implementations often encounter issues with uneven thickness due to skewing and inconsistent alignment of vertices, this implementation makes sure that all generated meshes remain high quality and automatically fixes all of these issues
 ### No twisting 

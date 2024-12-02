@@ -1,0 +1,12 @@
+{
+    "name": "com.survivorr.linerenderer3d.runtime",
+    "references": [
+    "UnityEngine",
+    "Unity.Collections",
+    "Unity.Jobs",
+    "Unity.Burst",
+    "System.Linq",
+    "System.Collections",
+    "System.Collections.Generic"
+    ]
+}

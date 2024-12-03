@@ -6,92 +6,6 @@ using Unity.Jobs;
 using UnityEngine;
 using Unity.Burst;
 [System.Serializable]
-public struct Point{
-    public Vector3 position;
-    [HideInInspector] public Vector3 direction;
-    [HideInInspector] public Vector3 normal;
-    [HideInInspector] public Vector3 up;
-    [HideInInspector] public Vector3 right;
-    public float thickness;
-    public Point(Vector3 position, Vector3 direction, Vector3 normal, Vector3 up, Vector3 right, float thickness){
-        this.position = position;
-        this.direction = direction;
-        this.normal = normal;
-        this.thickness = thickness;
-        this.up = up;
-        this.right = right;
-    }
-    public Point(Vector3 position, float thickness){
-        this.position = position;
-        this.direction = Vector3.zero;
-        this.normal = Vector3.zero;
-        this.thickness = thickness;
-        this.up = Vector3.zero;
-        this.right = Vector3.zero;
-    }
-}
-[BurstCompile] public struct Line3D : IJobParallelFor {
-    public int resolution;
-    public int iterations;
-    [ReadOnly] public NativeArray<Point> nodes;
-    [ReadOnly] public NativeArray<float> sines;
-    [ReadOnly] public NativeArray<float> cosines;
-    //[NativeDisableParallelForRestriction] is unsafe and can cause race conditions,
-    //but in this case each job works on n=resolution vertices so it's not an issue
-    //look at it like at a 2d array of size Points x resolution
-    //i used this approach because it makes adressing points way easier
-    [NativeDisableParallelForRestriction] public NativeArray<Vector3> vertices;
-    [NativeDisableParallelForRestriction] public NativeArray<int> indices;
-    [NativeDisableParallelForRestriction] public NativeArray<Vector3> normals;
-    public void Execute(int i) {
-        Vector3 right = nodes[i].right.normalized * nodes[i].thickness;
-        Vector3 up = nodes[i].up.normalized * nodes[i].thickness;
-        for (int j = 0; j < resolution; j++){
-            vertices[i * resolution + j] = nodes[i].position;
-            Vector3 vertexOffset = cosines[j] * right + sines[j] * up;
-            normals[i * resolution + j] += vertexOffset.normalized;
-            vertexOffset += nodes[i].normal.normalized * Vector3.Dot(nodes[i].normal.normalized, vertexOffset) * (Mathf.Clamp(1/nodes[i].normal.magnitude, 0, 2) - 1);
-            vertices[i * resolution + j] += vertexOffset;
-            if (i == iterations - 1) continue;
-            int offset = i * resolution * 6 + j * 6;
-            indices[offset] = j + i * resolution;
-            indices[offset + 1] = (j + 1) % resolution + i * resolution;
-            indices[offset + 2] = j + resolution + i * resolution;
-            indices[offset + 3] = (j + 1) % resolution + i * resolution;
-            indices[offset + 4] = (j + 1) % resolution + resolution + i * resolution;
-            indices[offset + 5] = j + resolution + i * resolution;
-        }
-    }
-}
-[BurstCompile] public struct CalculatePointData : IJobParallelFor{
-    [NativeDisableParallelForRestriction] public NativeArray<Point> nodes;
-    public void Execute(int i){
-        if (i == 0) return;
-        Vector3 previous = (nodes[i].position - nodes[i-1].position).normalized;
-        Vector3 next = (nodes[i+1].position - nodes[i].position).normalized;
-        Vector3 direction = Vector3.Lerp(previous, next, 0.5f).normalized;
-        Vector3 normal = (next - previous).normalized * Mathf.Abs(Vector3.Dot(previous, direction)); //length encodes cosine of angle   
-        Vector3 right = Vector3.Cross(direction, Vector3.right).normalized;
-        if(right.magnitude < 0.05f){
-            right = Vector3.Cross(direction, Vector3.forward).normalized;
-        }
-        Vector3 up = Vector3.Cross(direction, right).normalized;
-        nodes[i] = new Point(nodes[i].position, direction, normal, up, right, nodes[i].thickness);
-    }
-}
-[BurstCompile] public struct FixPointsRotation : IJob{
-    public NativeArray<Point> nodes;
-    public void Execute(){
-            for(int i = 0; i < nodes.Length - 1; i++){
-            Vector3 fromTo = (nodes[i+1].position - nodes[i].position).normalized;
-            Vector3 firstRight = nodes[i].right - Vector3.Dot(nodes[i].right, fromTo) * fromTo;
-            Vector3 secondRight = nodes[i+1].right - Vector3.Dot(nodes[i+1].right, fromTo) * fromTo;
-            float angle = -Vector3.SignedAngle(firstRight, secondRight, fromTo);
-            Quaternion rot = Quaternion.AngleAxis(angle, nodes[i+1].direction);
-            nodes[i+1] = new Point(nodes[i+1].position, nodes[i+1].direction, nodes[i+1].normal, rot * nodes[i+1].up, rot * nodes[i+1].right, nodes[i+1].thickness);
-        }   
-    }
-}
 public class LineRenderer3D : MonoBehaviour
 {
     public bool autoUpdate;
@@ -235,5 +149,91 @@ public class LineRenderer3D : MonoBehaviour
     ///<summary> set points to an array of vector3 and float (thickness) </summary>
     public void SetPoints(Vector3[] positions, float[] thicknesses){
         points = positions.Zip(thicknesses, (position, thickness) => new Point(position, thickness)).ToList();
+    }
+    public struct Point{
+        public Vector3 position;
+        [HideInInspector] public Vector3 direction;
+        [HideInInspector] public Vector3 normal;
+        [HideInInspector] public Vector3 up;
+        [HideInInspector] public Vector3 right;
+        public float thickness;
+        public Point(Vector3 position, Vector3 direction, Vector3 normal, Vector3 up, Vector3 right, float thickness){
+            this.position = position;
+            this.direction = direction;
+            this.normal = normal;
+            this.thickness = thickness;
+            this.up = up;
+            this.right = right;
+        }
+        public Point(Vector3 position, float thickness){
+            this.position = position;
+            this.direction = Vector3.zero;
+            this.normal = Vector3.zero;
+            this.thickness = thickness;
+            this.up = Vector3.zero;
+            this.right = Vector3.zero;
+        }
+    }
+    [BurstCompile] public struct Line3D : IJobParallelFor {
+        public int resolution;
+        public int iterations;
+        [ReadOnly] public NativeArray<Point> nodes;
+        [ReadOnly] public NativeArray<float> sines;
+        [ReadOnly] public NativeArray<float> cosines;
+        //[NativeDisableParallelForRestriction] is unsafe and can cause race conditions,
+        //but in this case each job works on n=resolution vertices so it's not an issue
+        //look at it like at a 2d array of size Points x resolution
+        //i used this approach because it makes adressing points way easier
+        [NativeDisableParallelForRestriction] public NativeArray<Vector3> vertices;
+        [NativeDisableParallelForRestriction] public NativeArray<int> indices;
+        [NativeDisableParallelForRestriction] public NativeArray<Vector3> normals;
+        public void Execute(int i) {
+            Vector3 right = nodes[i].right.normalized * nodes[i].thickness;
+            Vector3 up = nodes[i].up.normalized * nodes[i].thickness;
+            for (int j = 0; j < resolution; j++){
+                vertices[i * resolution + j] = nodes[i].position;
+                Vector3 vertexOffset = cosines[j] * right + sines[j] * up;
+                normals[i * resolution + j] += vertexOffset.normalized;
+                vertexOffset += nodes[i].normal.normalized * Vector3.Dot(nodes[i].normal.normalized, vertexOffset) * (Mathf.Clamp(1/nodes[i].normal.magnitude, 0, 2) - 1);
+                vertices[i * resolution + j] += vertexOffset;
+                if (i == iterations - 1) continue;
+                int offset = i * resolution * 6 + j * 6;
+                indices[offset] = j + i * resolution;
+                indices[offset + 1] = (j + 1) % resolution + i * resolution;
+                indices[offset + 2] = j + resolution + i * resolution;
+                indices[offset + 3] = (j + 1) % resolution + i * resolution;
+                indices[offset + 4] = (j + 1) % resolution + resolution + i * resolution;
+                indices[offset + 5] = j + resolution + i * resolution;
+            }
+        }
+    }
+    [BurstCompile] public struct CalculatePointData : IJobParallelFor{
+        [NativeDisableParallelForRestriction] public NativeArray<Point> nodes;
+        public void Execute(int i){
+            if (i == 0) return;
+            Vector3 previous = (nodes[i].position - nodes[i-1].position).normalized;
+            Vector3 next = (nodes[i+1].position - nodes[i].position).normalized;
+            Vector3 direction = Vector3.Lerp(previous, next, 0.5f).normalized;
+            Vector3 normal = (next - previous).normalized * Mathf.Abs(Vector3.Dot(previous, direction)); //length encodes cosine of angle   
+            Vector3 right = Vector3.Cross(direction, Vector3.right).normalized;
+            if(right.magnitude < 0.05f){
+                right = Vector3.Cross(direction, Vector3.forward).normalized;
+            }
+            Vector3 up = Vector3.Cross(direction, right).normalized;
+            nodes[i] = new Point(nodes[i].position, direction, normal, up, right, nodes[i].thickness);
+        }
+    }
+    [BurstCompile] public struct FixPointsRotation : IJob{
+        public NativeArray<Point> nodes;
+        public void Execute(){
+                for(int i = 0; i < nodes.Length - 1; i++){
+                Vector3 fromTo = (nodes[i+1].position - nodes[i].position).normalized;
+                Vector3 firstRight = nodes[i].right - Vector3.Dot(nodes[i].right, fromTo) * fromTo;
+                Vector3 secondRight = nodes[i+1].right - Vector3.Dot(nodes[i+1].right, fromTo) * fromTo;
+                float angle = -Vector3.SignedAngle(firstRight, secondRight, fromTo);
+                Quaternion rot = Quaternion.AngleAxis(angle, nodes[i+1].direction);
+                nodes[i+1] = new Point(nodes[i+1].position, nodes[i+1].direction, nodes[i+1].normal, rot * nodes[i+1].up, rot * nodes[i+1].right, nodes[i+1].thickness);
+            }   
+        }
     }
 }

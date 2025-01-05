@@ -19,6 +19,7 @@ public class LineRenderer3D : MonoBehaviour
     //-----------------------------------------------------------------------//
     NativeArray<Vector3> vertices;
     NativeArray<Vector3> normals;
+    NativeArray<Vector2> uvs;
     NativeArray<Point> nodes;
     NativeArray<int> indices;
     NativeArray<float> sines;
@@ -59,6 +60,7 @@ public class LineRenderer3D : MonoBehaviour
     public void BeginGeneration(){
         vertices = new NativeArray<Vector3>(points.Count() * resolution, Allocator.TempJob);
         normals = new NativeArray<Vector3>(points.Count() * resolution, Allocator.TempJob);
+        uvs = new NativeArray<Vector2>(points.Count() * resolution, Allocator.TempJob);
         indices = new NativeArray<int>(points.Count() * resolution * 6 - resolution * 6, Allocator.TempJob);
         nodes = new NativeArray<Point>(points.Count(), Allocator.TempJob);
         sines = new NativeArray<float>(resolution, Allocator.TempJob);
@@ -93,6 +95,7 @@ public class LineRenderer3D : MonoBehaviour
             nodes = nodes,
             cosines = cosines,
             normals = normals,
+            uvs = uvs,
             iterations = points.Count(),
         };
         jobHandle = meshJob.Schedule(points.Count(), 16);
@@ -103,6 +106,7 @@ public class LineRenderer3D : MonoBehaviour
         mesh.SetVertices(vertices);
         mesh.SetIndices(indices, MeshTopology.Triangles, 0);
         mesh.SetNormals(normals);
+        mesh.SetUVs(0, uvs);
 
         vertices.Dispose();
         indices.Dispose();
@@ -110,6 +114,7 @@ public class LineRenderer3D : MonoBehaviour
         cosines.Dispose();
         nodes.Dispose();
         normals.Dispose();
+        uvs.Dispose();
     }
     void CalculateEdgePoints(){
         Vector3 edgeDirection = (nodes[1].position - nodes[0].position).normalized;
@@ -180,6 +185,7 @@ public class LineRenderer3D : MonoBehaviour
         [ReadOnly] public NativeArray<Point> nodes;
         [ReadOnly] public NativeArray<float> sines;
         [ReadOnly] public NativeArray<float> cosines;
+        [WriteOnly] private float distance;
         //[NativeDisableParallelForRestriction] is unsafe and can cause race conditions,
         //but in this case each job works on n=resolution vertices so it's not an issue
         //look at it like at a 2d array of size Points x resolution
@@ -187,15 +193,18 @@ public class LineRenderer3D : MonoBehaviour
         [NativeDisableParallelForRestriction] public NativeArray<Vector3> vertices;
         [NativeDisableParallelForRestriction] public NativeArray<int> indices;
         [NativeDisableParallelForRestriction] public NativeArray<Vector3> normals;
+        [NativeDisableParallelForRestriction] public NativeArray<Vector2> uvs;
         public void Execute(int i) {
             Vector3 right = nodes[i].right.normalized * nodes[i].thickness;
             Vector3 up = nodes[i].up.normalized * nodes[i].thickness;
+            distance = i == 0 ? 0f : distance + Vector3.Distance(nodes[i].position, nodes[i - 1].position);
             for (int j = 0; j < resolution; j++){
                 vertices[i * resolution + j] = nodes[i].position;
                 Vector3 vertexOffset = cosines[j] * right + sines[j] * up;
                 normals[i * resolution + j] += vertexOffset.normalized;
                 vertexOffset += nodes[i].normal.normalized * Vector3.Dot(nodes[i].normal.normalized, vertexOffset) * (Mathf.Clamp(1/nodes[i].normal.magnitude, 0, 2) - 1);
                 vertices[i * resolution + j] += vertexOffset;
+                uvs[i * resolution + j] = new(distance, (float)j / (resolution - 1));
                 if (i == iterations - 1) continue;
                 int offset = i * resolution * 6 + j * 6;
                 indices[offset] = j + i * resolution;

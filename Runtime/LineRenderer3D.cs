@@ -155,6 +155,7 @@ public class LineRenderer3D : MonoBehaviour
     public void SetPoints(Vector3[] positions, float[] thicknesses){
         points = positions.Zip(thicknesses, (position, thickness) => new Point(position, thickness)).ToList();
     }
+    [System.Serializable]
     public struct Point{
         public Vector3 position;
         [HideInInspector] public Vector3 direction;

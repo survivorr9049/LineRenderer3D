@@ -38,9 +38,6 @@ public class LineRenderer3D : MonoBehaviour
         mesh = new Mesh();
         meshFilter.sharedMesh = mesh;
         meshRenderer.sharedMaterial = material;
-        Vector3 direction = Vector3.forward;
-        Vector3 position = Vector3.zero;
-        Vector3 lastDirection = Vector3.forward;
     }
     void Update()
     {
@@ -58,14 +55,14 @@ public class LineRenderer3D : MonoBehaviour
         autoComplete = true;
     }
     public void BeginGeneration(){
-        vertices = new NativeArray<Vector3>(points.Count() * resolution, Allocator.TempJob);
-        normals = new NativeArray<Vector3>(points.Count() * resolution, Allocator.TempJob);
-        uvs = new NativeArray<Vector2>(points.Count() * resolution, Allocator.TempJob);
-        indices = new NativeArray<int>(points.Count() * resolution * 6 - resolution * 6, Allocator.TempJob);
-        nodes = new NativeArray<Point>(points.Count(), Allocator.TempJob);
+        vertices = new NativeArray<Vector3>(points.Count * resolution, Allocator.TempJob);
+        normals = new NativeArray<Vector3>(points.Count * resolution, Allocator.TempJob);
+        uvs = new NativeArray<Vector2>(points.Count * resolution, Allocator.TempJob);
+        indices = new NativeArray<int>(points.Count * resolution * 6 - resolution * 6, Allocator.TempJob);
+        nodes = new NativeArray<Point>(points.Count, Allocator.TempJob);
         sines = new NativeArray<float>(resolution, Allocator.TempJob);
         cosines = new NativeArray<float>(resolution, Allocator.TempJob);
-        for(int i = 0; i < points.Count(); i++){
+        for(int i = 0; i < points.Count; i++){
             nodes[i] = points[i];
         }
 
@@ -73,7 +70,7 @@ public class LineRenderer3D : MonoBehaviour
         {
             nodes = nodes
         };
-        pointsJobHandle = pointsJob.Schedule(points.Count() - 1, 32);
+        pointsJobHandle = pointsJob.Schedule(points.Count - 1, 32);
         for(int i = 0; i < resolution; i++){
             sines[i] = Mathf.Sin(i * Mathf.PI * 2 / resolution);
             cosines[i] = Mathf.Cos(i * Mathf.PI * 2 / resolution);
@@ -96,13 +93,14 @@ public class LineRenderer3D : MonoBehaviour
             cosines = cosines,
             normals = normals,
             uvs = uvs,
-            iterations = points.Count(),
+            iterations = points.Count,
         };
-        jobHandle = meshJob.Schedule(points.Count(), 16);
+        jobHandle = meshJob.Schedule(points.Count, 16);
         JobHandle.ScheduleBatchedJobs();
     }
     public void CompleteGeneration(){
         jobHandle.Complete();
+        mesh.Clear();
         mesh.SetVertices(vertices);
         mesh.SetIndices(indices, MeshTopology.Triangles, 0);
         mesh.SetNormals(normals);
@@ -124,7 +122,7 @@ public class LineRenderer3D : MonoBehaviour
         edgeDirection = (nodes[nodes.Length-1].position - nodes[nodes.Length-2].position).normalized;
         edgeRight = Vector3.Cross(edgeDirection, Vector3.right).normalized;
         edgeUp = Vector3.Cross(edgeDirection, edgeRight).normalized;
-        nodes[nodes.Count()-1] = new Point(nodes[nodes.Length-1].position, edgeDirection, Vector3.zero, edgeUp, edgeRight, nodes[nodes.Length-1].thickness); 
+        nodes[nodes.Length-1] = new Point(nodes[nodes.Length-1].position, edgeDirection, Vector3.zero, edgeUp, edgeRight, nodes[nodes.Length-1].thickness); 
     }
 
      ///<summary> initialize renderer with set amount of empty points </summary>
